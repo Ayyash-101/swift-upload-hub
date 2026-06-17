@@ -508,11 +508,11 @@ function SessionPage() {
         const { error: rpcErr } = await supabase.rpc("update_presentation_state", {
           p_session_id: session.id,
           p_user_id: userId,
-          p_presentation_mode: patch.presentation_mode ?? null,
-          p_zoom: patch.zoom ?? null,
-          p_rotation: patch.rotation ?? null,
-          p_pan_x: patch.pan_x ?? null,
-          p_pan_y: patch.pan_y ?? null,
+          p_presentation_mode: patch.presentation_mode ?? undefined,
+          p_zoom: patch.zoom ?? undefined,
+          p_rotation: patch.rotation ?? undefined,
+          p_pan_x: patch.pan_x ?? undefined,
+          p_pan_y: patch.pan_y ?? undefined,
         });
         if (rpcErr) throw rpcErr;
       } catch (err) {
