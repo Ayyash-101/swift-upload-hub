@@ -9,38 +9,201 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as OfflineStatusRouteImport } from './routes/offline-status'
+import { Route as LibraryRouteImport } from './routes/library'
+import { Route as JoinRouteImport } from './routes/join'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SessionCodeRouteImport } from './routes/session.$code'
+import { Route as ReadKeyRouteImport } from './routes/read.$key'
+import { Route as OfflineReadBookIdRouteImport } from './routes/offline-read.$bookId'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfflineStatusRoute = OfflineStatusRouteImport.update({
+  id: '/offline-status',
+  path: '/offline-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SessionCodeRoute = SessionCodeRouteImport.update({
+  id: '/session/$code',
+  path: '/session/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReadKeyRoute = ReadKeyRouteImport.update({
+  id: '/read/$key',
+  path: '/read/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfflineReadBookIdRoute = OfflineReadBookIdRouteImport.update({
+  id: '/offline-read/$bookId',
+  path: '/offline-read/$bookId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/library': typeof LibraryRoute
+  '/offline-status': typeof OfflineStatusRoute
+  '/privacy': typeof PrivacyRoute
+  '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
+  '/offline-read/$bookId': typeof OfflineReadBookIdRoute
+  '/read/$key': typeof ReadKeyRoute
+  '/session/$code': typeof SessionCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/library': typeof LibraryRoute
+  '/offline-status': typeof OfflineStatusRoute
+  '/privacy': typeof PrivacyRoute
+  '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
+  '/offline-read/$bookId': typeof OfflineReadBookIdRoute
+  '/read/$key': typeof ReadKeyRoute
+  '/session/$code': typeof SessionCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/library': typeof LibraryRoute
+  '/offline-status': typeof OfflineStatusRoute
+  '/privacy': typeof PrivacyRoute
+  '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
+  '/offline-read/$bookId': typeof OfflineReadBookIdRoute
+  '/read/$key': typeof ReadKeyRoute
+  '/session/$code': typeof SessionCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/join'
+    | '/library'
+    | '/offline-status'
+    | '/privacy'
+    | '/settings'
+    | '/terms'
+    | '/offline-read/$bookId'
+    | '/read/$key'
+    | '/session/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/join'
+    | '/library'
+    | '/offline-status'
+    | '/privacy'
+    | '/settings'
+    | '/terms'
+    | '/offline-read/$bookId'
+    | '/read/$key'
+    | '/session/$code'
+  id:
+    | '__root__'
+    | '/'
+    | '/join'
+    | '/library'
+    | '/offline-status'
+    | '/privacy'
+    | '/settings'
+    | '/terms'
+    | '/offline-read/$bookId'
+    | '/read/$key'
+    | '/session/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JoinRoute: typeof JoinRoute
+  LibraryRoute: typeof LibraryRoute
+  OfflineStatusRoute: typeof OfflineStatusRoute
+  PrivacyRoute: typeof PrivacyRoute
+  SettingsRoute: typeof SettingsRoute
+  TermsRoute: typeof TermsRoute
+  OfflineReadBookIdRoute: typeof OfflineReadBookIdRoute
+  ReadKeyRoute: typeof ReadKeyRoute
+  SessionCodeRoute: typeof SessionCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offline-status': {
+      id: '/offline-status'
+      path: '/offline-status'
+      fullPath: '/offline-status'
+      preLoaderRoute: typeof OfflineStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +211,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/session/$code': {
+      id: '/session/$code'
+      path: '/session/$code'
+      fullPath: '/session/$code'
+      preLoaderRoute: typeof SessionCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/read/$key': {
+      id: '/read/$key'
+      path: '/read/$key'
+      fullPath: '/read/$key'
+      preLoaderRoute: typeof ReadKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offline-read/$bookId': {
+      id: '/offline-read/$bookId'
+      path: '/offline-read/$bookId'
+      fullPath: '/offline-read/$bookId'
+      preLoaderRoute: typeof OfflineReadBookIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JoinRoute: JoinRoute,
+  LibraryRoute: LibraryRoute,
+  OfflineStatusRoute: OfflineStatusRoute,
+  PrivacyRoute: PrivacyRoute,
+  SettingsRoute: SettingsRoute,
+  TermsRoute: TermsRoute,
+  OfflineReadBookIdRoute: OfflineReadBookIdRoute,
+  ReadKeyRoute: ReadKeyRoute,
+  SessionCodeRoute: SessionCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
