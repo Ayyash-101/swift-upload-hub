@@ -314,10 +314,6 @@ function SessionPage() {
             // matches the session's known leader. Don't bail if it's
             // missing (older clients).
             if (patch.leader_id && patch.leader_id !== prev.leader_id) {
-              console.warn("[presentation] leader_id mismatch — ignoring", {
-                patch_leader: patch.leader_id,
-                session_leader: prev.leader_id,
-              });
               return prev;
             }
             const next: Session = { ...prev };
