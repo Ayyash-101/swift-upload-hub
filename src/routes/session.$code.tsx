@@ -295,6 +295,32 @@ function SessionPage() {
           if (!p) return;
           setRemotePointer(p.visible ? p : null);
         })
+        // Phase 4: low-latency presentation-state sync. Only participants
+        // need to apply incoming patches — the leader is the publisher
+        // and already updates local state optimistically. Guarding on
+        // `is_from_leader` (and the leader_id check in setSession below)
+        // also defends against a stray client trying to publish.
+        .on("broadcast", { event: PRESENTATION_EVENT }, (payload) => {
+          const patch = (payload?.payload ?? null) as
+            | (PresentationPatch & { leader_id?: string })
+            | null;
+          if (!patch) return;
+          setSession((prev) => {
+            if (!prev) return prev;
+            // Feedback-loop guard: ignore broadcasts that didn't come from
+            // the session's actual leader, and ignore our own echoes.
+            if (patch.leader_id && patch.leader_id !== prev.leader_id) return prev;
+            if (prev.leader_id === userId) return prev;
+            const next = { ...prev } as Session;
+            if (patch.presentation_mode !== undefined)
+              next.presentation_mode = patch.presentation_mode;
+            if (patch.zoom !== undefined) next.zoom = patch.zoom;
+            if (patch.rotation !== undefined) next.rotation = patch.rotation;
+            if (patch.pan_x !== undefined) next.pan_x = patch.pan_x;
+            if (patch.pan_y !== undefined) next.pan_y = patch.pan_y;
+            return next;
+          });
+        })
         .subscribe();
       channelRef.current = channel;
     })();
