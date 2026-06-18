@@ -40,8 +40,21 @@ type SyncStatus = "offline" | "following" | "delayed" | "ahead";
 const ONLINE_WINDOW_MS = 45_000;
 
 // Phase 4 — Leader Presentation Mode
-// Broadcast event name used on the existing per-session realtime channel.
+// Broadcast event names used on the existing per-session realtime channel.
 const POINTER_EVENT = "leader-pointer";
+// Low-latency presentation-state broadcast. The DB UPDATE still happens
+// for persistence + late joiners, but participants apply the broadcast
+// payload immediately (<100ms) instead of waiting for the postgres_changes
+// round-trip.
+const PRESENTATION_EVENT = "leader-presentation";
+
+type PresentationPatch = Partial<{
+  presentation_mode: boolean;
+  zoom: number;
+  rotation: number;
+  pan_x: number;
+  pan_y: number;
+}>;
 // Fallback defaults for sessions created BEFORE this migration ran.
 // (Backward compat: types says the field is required, but a stale row
 //  might still arrive over realtime without it. Coerce on read.)
