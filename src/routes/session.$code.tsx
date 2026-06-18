@@ -40,8 +40,21 @@ type SyncStatus = "offline" | "following" | "delayed" | "ahead";
 const ONLINE_WINDOW_MS = 45_000;
 
 // Phase 4 — Leader Presentation Mode
-// Broadcast event name used on the existing per-session realtime channel.
+// Broadcast event names used on the existing per-session realtime channel.
 const POINTER_EVENT = "leader-pointer";
+// Low-latency presentation-state broadcast. The DB UPDATE still happens
+// for persistence + late joiners, but participants apply the broadcast
+// payload immediately (<100ms) instead of waiting for the postgres_changes
+// round-trip.
+const PRESENTATION_EVENT = "leader-presentation";
+
+type PresentationPatch = Partial<{
+  presentation_mode: boolean;
+  zoom: number;
+  rotation: number;
+  pan_x: number;
+  pan_y: number;
+}>;
 // Fallback defaults for sessions created BEFORE this migration ran.
 // (Backward compat: types says the field is required, but a stale row
 //  might still arrive over realtime without it. Coerce on read.)
@@ -282,6 +295,32 @@ function SessionPage() {
           if (!p) return;
           setRemotePointer(p.visible ? p : null);
         })
+        // Phase 4: low-latency presentation-state sync. Only participants
+        // need to apply incoming patches — the leader is the publisher
+        // and already updates local state optimistically. Guarding on
+        // `is_from_leader` (and the leader_id check in setSession below)
+        // also defends against a stray client trying to publish.
+        .on("broadcast", { event: PRESENTATION_EVENT }, (payload) => {
+          const patch = (payload?.payload ?? null) as
+            | (PresentationPatch & { leader_id?: string })
+            | null;
+          if (!patch) return;
+          setSession((prev) => {
+            if (!prev) return prev;
+            // Feedback-loop guard: ignore broadcasts that didn't come from
+            // the session's actual leader, and ignore our own echoes.
+            if (patch.leader_id && patch.leader_id !== prev.leader_id) return prev;
+            if (prev.leader_id === userId) return prev;
+            const next = { ...prev } as Session;
+            if (patch.presentation_mode !== undefined)
+              next.presentation_mode = patch.presentation_mode;
+            if (patch.zoom !== undefined) next.zoom = patch.zoom;
+            if (patch.rotation !== undefined) next.rotation = patch.rotation;
+            if (patch.pan_x !== undefined) next.pan_x = patch.pan_x;
+            if (patch.pan_y !== undefined) next.pan_y = patch.pan_y;
+            return next;
+          });
+        })
         .subscribe();
       channelRef.current = channel;
     })();
@@ -492,17 +531,17 @@ function SessionPage() {
    * instant — the realtime echo will reconcile if anything diverges.
    */
   const patchPresentation = useCallback(
-    async (
-      patch: Partial<{
-        presentation_mode: boolean;
-        zoom: number;
-        rotation: number;
-        pan_x: number;
-        pan_y: number;
-      }>,
-    ) => {
+    async (patch: PresentationPatch) => {
       if (!session || !isLeader || !online) return;
       setSession((prev) => (prev ? ({ ...prev, ...patch } as Session) : prev));
+      // Push to participants immediately over the realtime channel so they
+      // apply zoom/pan/rotation in well under 100ms — the DB write below
+      // is still the source of truth for late joiners.
+      channelRef.current?.send({
+        type: "broadcast",
+        event: PRESENTATION_EVENT,
+        payload: { ...patch, leader_id: session.leader_id },
+      });
       try {
         const supabase = await getSupabaseClient();
         const { error: rpcErr } = await supabase.rpc("update_presentation_state", {
@@ -586,16 +625,27 @@ function SessionPage() {
       baseY: presentation.pan_y,
     };
   };
+  const lastPanBroadcast = useRef<number>(0);
   const onPanPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = panDragRef.current;
-    if (!d) return;
-    // Live local feedback — update session state only; we'll push to
-    // the server on pointerup to avoid spamming RPCs.
+    if (!d || !session) return;
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
-    setSession((prev) =>
-      prev ? ({ ...prev, pan_x: d.baseX + dx, pan_y: d.baseY + dy } as Session) : prev,
-    );
+    const nextX = d.baseX + dx;
+    const nextY = d.baseY + dy;
+    setSession((prev) => (prev ? ({ ...prev, pan_x: nextX, pan_y: nextY } as Session) : prev));
+    // Broadcast intermediate pan to participants ~30fps so the drag
+    // feels live on their side too. The DB write still waits for
+    // pointerup to avoid RPC spam.
+    const now = performance.now();
+    if (now - lastPanBroadcast.current >= 33) {
+      lastPanBroadcast.current = now;
+      channelRef.current?.send({
+        type: "broadcast",
+        event: PRESENTATION_EVENT,
+        payload: { pan_x: nextX, pan_y: nextY, leader_id: session.leader_id },
+      });
+    }
   };
   const onPanPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = panDragRef.current;
