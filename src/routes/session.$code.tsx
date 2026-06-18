@@ -531,17 +531,17 @@ function SessionPage() {
    * instant — the realtime echo will reconcile if anything diverges.
    */
   const patchPresentation = useCallback(
-    async (
-      patch: Partial<{
-        presentation_mode: boolean;
-        zoom: number;
-        rotation: number;
-        pan_x: number;
-        pan_y: number;
-      }>,
-    ) => {
+    async (patch: PresentationPatch) => {
       if (!session || !isLeader || !online) return;
       setSession((prev) => (prev ? ({ ...prev, ...patch } as Session) : prev));
+      // Push to participants immediately over the realtime channel so they
+      // apply zoom/pan/rotation in well under 100ms — the DB write below
+      // is still the source of truth for late joiners.
+      channelRef.current?.send({
+        type: "broadcast",
+        event: PRESENTATION_EVENT,
+        payload: { ...patch, leader_id: session.leader_id },
+      });
       try {
         const supabase = await getSupabaseClient();
         const { error: rpcErr } = await supabase.rpc("update_presentation_state", {
