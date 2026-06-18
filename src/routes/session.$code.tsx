@@ -304,19 +304,12 @@ function SessionPage() {
           const patch = (payload?.payload ?? null) as
             | (PresentationPatch & { leader_id?: string })
             | null;
-          console.log("[presentation] ⬇ received broadcast", patch);
           if (!patch) return;
           setSession((prev) => {
-            if (!prev) {
-              console.log("[presentation] no prev session, dropping");
-              return prev;
-            }
+            if (!prev) return prev;
             // Feedback-loop guard: never apply our own echo. Leader is the
             // publisher; only participants apply incoming patches.
-            if (prev.leader_id === userId) {
-              console.log("[presentation] I am leader — skipping echo");
-              return prev;
-            }
+            if (prev.leader_id === userId) return prev;
             // Defence-in-depth: if a leader_id was provided, ensure it
             // matches the session's known leader. Don't bail if it's
             // missing (older clients).
@@ -334,13 +327,6 @@ function SessionPage() {
             if (patch.rotation !== undefined) next.rotation = patch.rotation;
             if (patch.pan_x !== undefined) next.pan_x = patch.pan_x;
             if (patch.pan_y !== undefined) next.pan_y = patch.pan_y;
-            console.log("[presentation] ✅ applying to viewer", {
-              zoom: next.zoom,
-              rotation: next.rotation,
-              pan_x: next.pan_x,
-              pan_y: next.pan_y,
-              presentation_mode: next.presentation_mode,
-            });
             return next;
           });
         })
@@ -560,15 +546,11 @@ function SessionPage() {
       // Push to participants immediately over the realtime channel so they
       // apply zoom/pan/rotation in well under 100ms — the DB write below
       // is still the source of truth for late joiners.
-      console.log("[presentation] ⬆ leader sending broadcast", patch);
-      const sendResult = channelRef.current?.send({
+      void channelRef.current?.send({
         type: "broadcast",
         event: PRESENTATION_EVENT,
         payload: { ...patch, leader_id: session.leader_id },
       });
-      Promise.resolve(sendResult).then((r) =>
-        console.log("[presentation] broadcast send result:", r),
-      );
       try {
         const supabase = await getSupabaseClient();
         const { error: rpcErr } = await supabase.rpc("update_presentation_state", {
