@@ -79,6 +79,7 @@ export function PdfViewer({
   const [baseWidth, setBaseWidth] = useState<number>(800);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [appliedTransform, setAppliedTransform] = useState({ zoom, rotation, panX, panY });
   const file = useMemo(() => (data ? { data } : url), [data, url]);
   const displaySource = sourceLabel ?? (data ? "IndexedDB" : (url ?? ""));
 
@@ -104,14 +105,18 @@ export function PdfViewer({
     console.log("[PdfViewer] pdfjs version:", pdfjs.version, "worker: inline");
   }, [displaySource, data, url]);
 
+  useEffect(() => {
+    setAppliedTransform({ zoom, rotation, panX, panY });
+  }, [zoom, rotation, panX, panY]);
+
   // Effective render width — `zoom` multiplies the auto-fit base.
   // Clamp so we never blow up react-pdf with absurd sizes.
-  const renderWidth = Math.max(120, Math.min(baseWidth * zoom, 4000));
+  const renderWidth = Math.max(120, Math.min(baseWidth * appliedTransform.zoom, 4000));
 
   // The outer wrapper handles pan via CSS transform so we don't have
   // to re-render the PDF on every pixel of drag.
   const transformStyle: React.CSSProperties = {
-    transform: `translate(${panX}px, ${panY}px)`,
+    transform: `translate(${appliedTransform.panX}px, ${appliedTransform.panY}px)`,
     transition: locked ? "transform 120ms ease-out" : undefined,
     willChange: "transform",
   };
