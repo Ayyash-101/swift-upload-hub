@@ -215,9 +215,10 @@ export function PdfViewer({
             >
               {loaded && (
                 <Page
+                  key={`${page}-${appliedTransform.rotation}-${Math.round(renderWidth)}`}
                   pageNumber={page}
                   width={renderWidth}
-                  rotate={rotation}
+                  rotate={appliedTransform.rotation}
                   renderTextLayer={false}
                   renderAnnotationLayer={false}
                   onRenderError={(err) => {
