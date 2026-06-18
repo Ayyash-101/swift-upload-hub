@@ -560,11 +560,15 @@ function SessionPage() {
       // Push to participants immediately over the realtime channel so they
       // apply zoom/pan/rotation in well under 100ms — the DB write below
       // is still the source of truth for late joiners.
-      channelRef.current?.send({
+      console.log("[presentation] ⬆ leader sending broadcast", patch);
+      const sendResult = channelRef.current?.send({
         type: "broadcast",
         event: PRESENTATION_EVENT,
         payload: { ...patch, leader_id: session.leader_id },
       });
+      Promise.resolve(sendResult).then((r) =>
+        console.log("[presentation] broadcast send result:", r),
+      );
       try {
         const supabase = await getSupabaseClient();
         const { error: rpcErr } = await supabase.rpc("update_presentation_state", {
