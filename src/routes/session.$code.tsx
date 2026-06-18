@@ -625,16 +625,27 @@ function SessionPage() {
       baseY: presentation.pan_y,
     };
   };
+  const lastPanBroadcast = useRef<number>(0);
   const onPanPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = panDragRef.current;
-    if (!d) return;
-    // Live local feedback — update session state only; we'll push to
-    // the server on pointerup to avoid spamming RPCs.
+    if (!d || !session) return;
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
-    setSession((prev) =>
-      prev ? ({ ...prev, pan_x: d.baseX + dx, pan_y: d.baseY + dy } as Session) : prev,
-    );
+    const nextX = d.baseX + dx;
+    const nextY = d.baseY + dy;
+    setSession((prev) => (prev ? ({ ...prev, pan_x: nextX, pan_y: nextY } as Session) : prev));
+    // Broadcast intermediate pan to participants ~30fps so the drag
+    // feels live on their side too. The DB write still waits for
+    // pointerup to avoid RPC spam.
+    const now = performance.now();
+    if (now - lastPanBroadcast.current >= 33) {
+      lastPanBroadcast.current = now;
+      channelRef.current?.send({
+        type: "broadcast",
+        event: PRESENTATION_EVENT,
+        payload: { pan_x: nextX, pan_y: nextY, leader_id: session.leader_id },
+      });
+    }
   };
   const onPanPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = panDragRef.current;
