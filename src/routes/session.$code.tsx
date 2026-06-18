@@ -931,6 +931,18 @@ function SessionPage() {
               onTogglePan={handleTogglePan}
               onReset={handleReset}
             />
+            {(() => {
+              if (!isLeader) {
+                console.log("[presentation] 🎨 participant render", {
+                  zoom: presentation.zoom,
+                  rotation: presentation.rotation,
+                  pan_x: presentation.pan_x,
+                  pan_y: presentation.pan_y,
+                  presentation_mode: presentation.presentation_mode,
+                });
+              }
+              return null;
+            })()}
             <PdfViewer
               data={pdfCachedData ?? undefined}
               url={pdfCachedData ? undefined : (pdfDisplayUrl ?? undefined)}
