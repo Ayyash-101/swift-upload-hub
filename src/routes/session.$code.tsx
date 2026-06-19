@@ -547,7 +547,7 @@ function SessionPage() {
   const patchPresentation = useCallback(
     async (patch: PresentationPatch) => {
       if (!session || !isLeader || !online) return;
-      setSession((prev) => (prev ? ({ ...prev, ...patch } as Session) : prev));
+      setLeaderPresentation((prev) => ({ ...prev, ...patch }));
       // Push to participants immediately over the realtime channel so they
       // apply zoom/pan/rotation in well under 100ms — the DB write below
       // is still the source of truth for late joiners.
@@ -647,7 +647,7 @@ function SessionPage() {
     const dy = e.clientY - d.startY;
     const nextX = d.baseX + dx;
     const nextY = d.baseY + dy;
-    setSession((prev) => (prev ? ({ ...prev, pan_x: nextX, pan_y: nextY } as Session) : prev));
+    setLeaderPresentation((prev) => ({ ...prev, pan_x: nextX, pan_y: nextY }));
     // Broadcast intermediate pan to participants ~30fps so the drag
     // feels live on their side too. The DB write still waits for
     // pointerup to avoid RPC spam.
@@ -672,8 +672,8 @@ function SessionPage() {
     }
     // Commit final pan to the DB once.
     void patchPresentation({
-      pan_x: presentation.pan_x,
-      pan_y: presentation.pan_y,
+      pan_x: d.baseX + (e.clientX - d.startX),
+      pan_y: d.baseY + (e.clientY - d.startY),
     });
   };
 
