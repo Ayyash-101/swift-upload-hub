@@ -164,6 +164,14 @@ function SessionPage() {
   const [leaderPresentation, setLeaderPresentation] = useState<PresentationState>(
     DEFAULT_PRESENTATION_STATE,
   );
+  const leaderPresentationSessionRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!session || !isLeader) return;
+    if (leaderPresentationSessionRef.current === session.id) return;
+    leaderPresentationSessionRef.current = session.id;
+    setLeaderPresentation(readPresentationState(session));
+  }, [isLeader, session]);
 
   const presentation = isLeader
     ? leaderPresentation
