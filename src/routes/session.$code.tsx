@@ -48,23 +48,33 @@ const POINTER_EVENT = "leader-pointer";
 // round-trip.
 const PRESENTATION_EVENT = "leader-presentation";
 
-type PresentationPatch = Partial<{
+type PresentationState = {
   presentation_mode: boolean;
   zoom: number;
   rotation: number;
   pan_x: number;
   pan_y: number;
-}>;
+};
+
+type PresentationPatch = Partial<PresentationState>;
+
+const DEFAULT_PRESENTATION_STATE: PresentationState = {
+  presentation_mode: false,
+  zoom: 1,
+  rotation: 0,
+  pan_x: 0,
+  pan_y: 0,
+};
 // Fallback defaults for sessions created BEFORE this migration ran.
 // (Backward compat: types says the field is required, but a stale row
 //  might still arrive over realtime without it. Coerce on read.)
 function readPresentationState(s: Session) {
   return {
-    presentation_mode: (s as Partial<Session>).presentation_mode ?? false,
-    zoom: (s as Partial<Session>).zoom ?? 1,
-    rotation: (s as Partial<Session>).rotation ?? 0,
-    pan_x: (s as Partial<Session>).pan_x ?? 0,
-    pan_y: (s as Partial<Session>).pan_y ?? 0,
+    presentation_mode: (s as Partial<Session>).presentation_mode ?? DEFAULT_PRESENTATION_STATE.presentation_mode,
+    zoom: (s as Partial<Session>).zoom ?? DEFAULT_PRESENTATION_STATE.zoom,
+    rotation: (s as Partial<Session>).rotation ?? DEFAULT_PRESENTATION_STATE.rotation,
+    pan_x: (s as Partial<Session>).pan_x ?? DEFAULT_PRESENTATION_STATE.pan_x,
+    pan_y: (s as Partial<Session>).pan_y ?? DEFAULT_PRESENTATION_STATE.pan_y,
   };
 }
 
