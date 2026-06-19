@@ -48,23 +48,33 @@ const POINTER_EVENT = "leader-pointer";
 // round-trip.
 const PRESENTATION_EVENT = "leader-presentation";
 
-type PresentationPatch = Partial<{
+type PresentationState = {
   presentation_mode: boolean;
   zoom: number;
   rotation: number;
   pan_x: number;
   pan_y: number;
-}>;
+};
+
+type PresentationPatch = Partial<PresentationState>;
+
+const DEFAULT_PRESENTATION_STATE: PresentationState = {
+  presentation_mode: false,
+  zoom: 1,
+  rotation: 0,
+  pan_x: 0,
+  pan_y: 0,
+};
 // Fallback defaults for sessions created BEFORE this migration ran.
 // (Backward compat: types says the field is required, but a stale row
 //  might still arrive over realtime without it. Coerce on read.)
 function readPresentationState(s: Session) {
   return {
-    presentation_mode: (s as Partial<Session>).presentation_mode ?? false,
-    zoom: (s as Partial<Session>).zoom ?? 1,
-    rotation: (s as Partial<Session>).rotation ?? 0,
-    pan_x: (s as Partial<Session>).pan_x ?? 0,
-    pan_y: (s as Partial<Session>).pan_y ?? 0,
+    presentation_mode: (s as Partial<Session>).presentation_mode ?? DEFAULT_PRESENTATION_STATE.presentation_mode,
+    zoom: (s as Partial<Session>).zoom ?? DEFAULT_PRESENTATION_STATE.zoom,
+    rotation: (s as Partial<Session>).rotation ?? DEFAULT_PRESENTATION_STATE.rotation,
+    pan_x: (s as Partial<Session>).pan_x ?? DEFAULT_PRESENTATION_STATE.pan_x,
+    pan_y: (s as Partial<Session>).pan_y ?? DEFAULT_PRESENTATION_STATE.pan_y,
   };
 }
 
@@ -151,16 +161,23 @@ function SessionPage() {
     baseX: number;
     baseY: number;
   } | null>(null);
+  const [leaderPresentation, setLeaderPresentation] = useState<PresentationState>(
+    DEFAULT_PRESENTATION_STATE,
+  );
+  const leaderPresentationSessionRef = useRef<string | null>(null);
 
-  const presentation = session
-    ? readPresentationState(session)
-    : {
-        presentation_mode: false,
-        zoom: 1,
-        rotation: 0,
-        pan_x: 0,
-        pan_y: 0,
-      };
+  useEffect(() => {
+    if (!session || !isLeader) return;
+    if (leaderPresentationSessionRef.current === session.id) return;
+    leaderPresentationSessionRef.current = session.id;
+    setLeaderPresentation(readPresentationState(session));
+  }, [isLeader, session]);
+
+  const presentation = isLeader
+    ? leaderPresentation
+    : session
+      ? readPresentationState(session)
+      : DEFAULT_PRESENTATION_STATE;
 
   // Flush any queued progress + library entries when we come back online.
   useEffect(() => {
@@ -538,7 +555,7 @@ function SessionPage() {
   const patchPresentation = useCallback(
     async (patch: PresentationPatch) => {
       if (!session || !isLeader || !online) return;
-      setSession((prev) => (prev ? ({ ...prev, ...patch } as Session) : prev));
+      setLeaderPresentation((prev) => ({ ...prev, ...patch }));
       // Push to participants immediately over the realtime channel so they
       // apply zoom/pan/rotation in well under 100ms — the DB write below
       // is still the source of truth for late joiners.
@@ -638,7 +655,7 @@ function SessionPage() {
     const dy = e.clientY - d.startY;
     const nextX = d.baseX + dx;
     const nextY = d.baseY + dy;
-    setSession((prev) => (prev ? ({ ...prev, pan_x: nextX, pan_y: nextY } as Session) : prev));
+    setLeaderPresentation((prev) => ({ ...prev, pan_x: nextX, pan_y: nextY }));
     // Broadcast intermediate pan to participants ~30fps so the drag
     // feels live on their side too. The DB write still waits for
     // pointerup to avoid RPC spam.
@@ -663,8 +680,8 @@ function SessionPage() {
     }
     // Commit final pan to the DB once.
     void patchPresentation({
-      pan_x: presentation.pan_x,
-      pan_y: presentation.pan_y,
+      pan_x: d.baseX + (e.clientX - d.startX),
+      pan_y: d.baseY + (e.clientY - d.startY),
     });
   };
 
