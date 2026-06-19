@@ -165,12 +165,11 @@ function SessionPage() {
     DEFAULT_PRESENTATION_STATE,
   );
 
-  useEffect(() => {
-    if (!session || isLeader) return;
-    setLeaderPresentation(readPresentationState(session));
-  }, [isLeader, session]);
-
-  const presentation = isLeader ? leaderPresentation : session ? readPresentationState(session) : leaderPresentation;
+  const presentation = isLeader
+    ? leaderPresentation
+    : session
+      ? readPresentationState(session)
+      : DEFAULT_PRESENTATION_STATE;
 
   // Flush any queued progress + library entries when we come back online.
   useEffect(() => {
