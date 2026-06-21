@@ -70,7 +70,8 @@ const DEFAULT_PRESENTATION_STATE: PresentationState = {
 //  might still arrive over realtime without it. Coerce on read.)
 function readPresentationState(s: Session) {
   return {
-    presentation_mode: (s as Partial<Session>).presentation_mode ?? DEFAULT_PRESENTATION_STATE.presentation_mode,
+    presentation_mode:
+      (s as Partial<Session>).presentation_mode ?? DEFAULT_PRESENTATION_STATE.presentation_mode,
     zoom: (s as Partial<Session>).zoom ?? DEFAULT_PRESENTATION_STATE.zoom,
     rotation: (s as Partial<Session>).rotation ?? DEFAULT_PRESENTATION_STATE.rotation,
     pan_x: (s as Partial<Session>).pan_x ?? DEFAULT_PRESENTATION_STATE.pan_x,
