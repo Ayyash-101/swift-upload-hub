@@ -178,6 +178,9 @@ function SessionPage() {
     : session
       ? readPresentationState(session)
       : DEFAULT_PRESENTATION_STATE;
+  const leaderCanInteract = isLeader;
+  const participantInteractionLocked = !leaderCanInteract && presentation.presentation_mode;
+  const leaderPanActive = leaderCanInteract && panMode;
 
   // Flush any queued progress + library entries when we come back online.
   useEffect(() => {
@@ -638,7 +641,7 @@ function SessionPage() {
   // We attach pointer listeners at the wrapper level so the PDF canvas
   // itself doesn't have to know about panning.
   const onPanPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isLeader || !panMode || !session) return;
+    if (!leaderCanInteract || !panMode || !session) return;
     (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
     panDragRef.current = {
       startX: e.clientX,
@@ -906,12 +909,13 @@ function SessionPage() {
             onPointerUp={onPanPointerUp}
             onPointerCancel={onPanPointerUp}
             style={{
-              touchAction: panMode ? "none" : undefined,
-              cursor: panMode ? "grab" : undefined,
+              touchAction: leaderPanActive || participantInteractionLocked ? "none" : undefined,
+              overscrollBehavior: participantInteractionLocked ? "contain" : undefined,
+              cursor: leaderPanActive ? "grab" : undefined,
             }}
           >
             <PresentationToolbar
-              isLeader={isLeader}
+              isLeader={leaderCanInteract}
               online={online}
               presentationMode={presentation.presentation_mode}
               zoom={presentation.zoom}
@@ -937,10 +941,10 @@ function SessionPage() {
               panY={presentation.pan_y}
               // Lock all gestures on participants while the leader is
               // presenting — they should see exactly the leader's view.
-              locked={!isLeader && presentation.presentation_mode}
-              pointerMode={isLeader && pointerMode}
-              remotePointer={!isLeader ? remotePointer : null}
-              onPointerMove={isLeader ? handleLeaderPointerMove : undefined}
+              locked={participantInteractionLocked}
+              pointerMode={leaderCanInteract && pointerMode}
+              remotePointer={!leaderCanInteract ? remotePointer : null}
+              onPointerMove={leaderCanInteract ? handleLeaderPointerMove : undefined}
               onLoadSuccess={async (numPages) => {
                 if (isLeader && online && numPages !== session.total_pages) {
                   const supabase = await getSupabaseClient();
